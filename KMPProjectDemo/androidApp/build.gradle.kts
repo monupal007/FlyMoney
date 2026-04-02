@@ -16,6 +16,7 @@ android {
     }
     buildFeatures {
         compose = true
+        viewBinding = true
     }
     packaging {
         resources {
@@ -49,4 +50,7 @@ dependencies {
     implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.9.1")
     implementation("io.coil-kt.coil3:coil-compose:3.0.0-alpha06")
     implementation("io.coil-kt.coil3:coil-network-ktor:3.0.0-alpha06")
+    implementation("androidx.navigation:navigation-compose:2.7.5")
+    implementation("androidx.glance:glance-appwidget:1.1.1")
+
 }

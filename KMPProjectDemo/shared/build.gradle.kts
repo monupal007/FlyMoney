@@ -65,6 +65,8 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
             implementation(libs.sqldelight.native)
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+
 //            implementation(libs.io.insert.koin.koin.core) // Koin core supports native now
         }
 

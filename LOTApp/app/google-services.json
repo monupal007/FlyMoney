@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "91144157535",
+    "project_id": "lot-app-abb77",
+    "storage_bucket": "lot-app-abb77.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:91144157535:android:c98e63cdf6694139101eea",
+        "android_client_info": {
+          "package_name": "com.dimts.lotapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "91144157535-ud9686n7memrbr908dp45dlb08qus6cd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA5b6iCNgoFXke4ksp_7FKnWXgWLir531o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "91144157535-ud9686n7memrbr908dp45dlb08qus6cd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
