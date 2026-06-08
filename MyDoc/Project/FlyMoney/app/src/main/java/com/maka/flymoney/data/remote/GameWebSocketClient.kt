@@ -3,7 +3,6 @@ package com.maka.flymoney.data.remote
 import com.google.firebase.auth.FirebaseAuth
 import com.google.gson.Gson
 import com.maka.flymoney.BuildConfig
-import com.maka.flymoney.domain.model.RoundState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,7 +23,7 @@ class GameWebSocketClient @Inject constructor(
     private val auth: FirebaseAuth,
     private val gson: Gson
 ) {
-    private var client: WebSocket? = null
+    private var client: WebSocketClient? = null
     private val _events = MutableSharedFlow<GameEvent>(extraBufferCapacity = 64)
     val events: SharedFlow<GameEvent> = _events.asSharedFlow()
     
@@ -62,7 +61,8 @@ class GameWebSocketClient @Inject constructor(
                 scope.launch {
                     _events.emit(GameEvent.Disconnected)
                     delay(2000) // Reconnect delay
-                    connect()
+                    // Explicitly call the outer class connect() to create a new client instance
+                    this@GameWebSocketClient.connect()
                 }
             }
 
@@ -127,5 +127,3 @@ class GameWebSocketClient @Inject constructor(
         client?.close()
     }
 }
-
-typealias WebSocket = WebSocketClient
