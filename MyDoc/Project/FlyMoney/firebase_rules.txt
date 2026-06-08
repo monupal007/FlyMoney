@@ -1,0 +1,45 @@
+// REALTIME DATABASE RULES
+{
+  "rules": {
+    "currentRound": { ".read": true, ".write": false },
+    "rounds": {
+      "$roundId": {
+        "bets": {
+          "$uid": {
+            ".read": "auth != null && auth.uid == $uid",
+            ".write": false
+          }
+        },
+        "cashouts": {
+          "$uid": {
+            ".read": "auth != null && auth.uid == $uid",
+            ".write": false
+          }
+        }
+      }
+    }
+  }
+}
+
+// FIRESTORE RULES
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false; // Server-only
+    }
+    match /transactions/{txId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow write: if false;
+    }
+    match /rounds/{roundId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /leaderboard/{period} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "644177314473",
+    "project_id": "fly-money-d4a03",
+    "storage_bucket": "fly-money-d4a03.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:644177314473:android:c2f329226c9254fbc71fb8",
+        "android_client_info": {
+          "package_name": "com.maka.flymoney"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpP7n5Iaj1xu53IQNrsVPtCVVYp8eIiOg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

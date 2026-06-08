@@ -11,10 +11,8 @@ import com.laundryapp.core.data.repository.DriverRepository
 import com.laundryapp.core.data.repository.OrderRepository
 import com.laundryapp.core.data.repository.ServiceRepository
 import com.laundryapp.core.data.repository.VendorRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class DashboardStats(
     val totalOrders: Int = 0,
@@ -28,8 +26,7 @@ data class DashboardStats(
     val totalRevenue: Double = 0.0
 )
 
-@HiltViewModel
-class AdminDashboardViewModel @Inject constructor(
+class AdminDashboardViewModel(
     private val orderRepository: OrderRepository,
     private val vendorRepository: VendorRepository,
     private val serviceRepository: ServiceRepository,
@@ -52,7 +49,6 @@ class AdminDashboardViewModel @Inject constructor(
         DashboardStats(
             totalOrders = orders.size,
             activeOrders = orders.count { it.status !in listOf(OrderStatus.DELIVERED, OrderStatus.CANCELLED) },
-            // Admin Revenue = platformFee + commissionAmount from all delivered orders
             totalRevenue = orders.filter { it.status == OrderStatus.DELIVERED }.sumOf { it.adminEarning },
             totalVendors = vendors.size,
             pendingVendors = vendors.count { !it.isApproved && !it.isRejected },
@@ -67,36 +63,41 @@ class AdminDashboardViewModel @Inject constructor(
         loadData()
     }
 
-    private fun loadData() {
+    fun loadData() {
         viewModelScope.launch {
             _isRefreshing.value = true
             _errorMessage.value = null
             
-            launch {
-                orderRepository.getAllOrders()
-                    .catch { e -> _errorMessage.value = "Orders Error: ${e.message}" }
-                    .collect { _allOrders.value = it }
-            }
-            
-            launch {
-                vendorRepository.getAllVendors()
-                    .catch { e -> _errorMessage.value = "Vendors Error: ${e.message}" }
-                    .collect { _allVendors.value = it }
-            }
+            try {
+                launch {
+                    orderRepository.getAllOrders()
+                        .catch { e -> _errorMessage.value = "Orders Error: ${e.message}" }
+                        .collect { _allOrders.value = it }
+                }
+                
+                launch {
+                    vendorRepository.getAllVendors()
+                        .catch { e -> _errorMessage.value = "Vendors Error: ${e.message}" }
+                        .collect { _allVendors.value = it }
+                }
 
-            launch {
-                serviceRepository.getOffers()
-                    .catch { e -> _errorMessage.value = "Offers Error: ${e.message}" }
-                    .collect { _allOffers.value = it }
-            }
+                launch {
+                    serviceRepository.getOffers()
+                        .catch { e -> _errorMessage.value = "Offers Error: ${e.message}" }
+                        .collect { _allOffers.value = it }
+                }
 
-            launch {
-                driverRepository.getAllDrivers()
-                    .catch { e -> _errorMessage.value = "Drivers Error: ${e.message}" }
-                    .collect { 
-                        _allDrivers.value = it
-                        _isRefreshing.value = false
-                    }
+                launch {
+                    driverRepository.getAllDrivers()
+                        .catch { e -> _errorMessage.value = "Drivers Error: ${e.message}" }
+                        .collect { 
+                            _allDrivers.value = it
+                            _isRefreshing.value = false
+                        }
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = e.message
+                _isRefreshing.value = false
             }
         }
     }
