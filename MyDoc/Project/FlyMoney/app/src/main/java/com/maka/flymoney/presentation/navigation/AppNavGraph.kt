@@ -31,6 +31,7 @@ import com.maka.flymoney.presentation.leaderboard.LeaderboardScreen
 import com.maka.flymoney.presentation.profile.ProfileScreen
 import com.maka.flymoney.presentation.wallet.WalletScreen
 import com.maka.flymoney.domain.repository.AuthRepository
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector? = null) {
@@ -51,8 +52,18 @@ fun AppNavGraph(
     var startDestination by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
+        // Initial check for start destination
         val user = viewModel.authRepository.currentUser.first()
         startDestination = if (user != null) Screen.Game.route else Screen.Login.route
+
+        // Observe auth changes for logout/login
+        viewModel.authRepository.currentUser.collectLatest { user ->
+            if (user == null && startDestination != null) {
+                navController.navigate(Screen.Login.route) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+        }
     }
 
     val destination = startDestination

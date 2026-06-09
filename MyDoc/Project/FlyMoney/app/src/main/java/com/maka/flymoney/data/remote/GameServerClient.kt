@@ -5,7 +5,9 @@ import com.google.gson.Gson
 import com.maka.flymoney.BuildConfig
 import com.maka.flymoney.data.remote.model.BetResponse
 import com.maka.flymoney.data.remote.model.CashoutResponse
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -51,8 +53,8 @@ class GameServerClient @Inject constructor(
         return "Bearer $token"
     }
 
-    private suspend fun <T> makeRequest(request: Request, responseClass: Class<T>): Result<T> {
-        return try {
+    private suspend fun <T> makeRequest(request: Request, responseClass: Class<T>): Result<T> = withContext(Dispatchers.IO) {
+        try {
             val response = client.newCall(request).execute()
             val body = response.body?.string()
             if (response.isSuccessful && body != null) {

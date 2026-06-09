@@ -2,6 +2,7 @@ package com.maka.flymoney.data.repository
 
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.maka.flymoney.data.remote.FirestoreSource
 import com.maka.flymoney.domain.model.Transaction as DomainTransaction
 import com.maka.flymoney.domain.model.TransactionType
@@ -37,7 +38,8 @@ class UserRepositoryImpl @Inject constructor(
             if (avatarUrl.isNotBlank()) updates["avatarUrl"] = avatarUrl
             
             if (updates.isNotEmpty()) {
-                firestore.collection("users").document(uid).update(updates).await()
+                // Use set with merge to create document if it doesn't exist
+                firestore.collection("users").document(uid).set(updates, SetOptions.merge()).await()
             }
             Result.success(Unit)
         } catch (e: Exception) {
@@ -59,7 +61,19 @@ class UserRepositoryImpl @Inject constructor(
             )
 
             firestore.runTransaction { transaction ->
-                transaction.update(userRef, "walletBalance", FieldValue.increment(amount))
+                val snapshot = transaction.get(userRef)
+                if (!snapshot.exists()) {
+                    // Create user if missing
+                    val newUser = User(
+                        uid = uid,
+                        walletBalance = amount,
+                        createdAt = System.currentTimeMillis()
+                    )
+                    transaction.set(userRef, newUser)
+                } else {
+                    // Update balance if exists
+                    transaction.update(userRef, "walletBalance", FieldValue.increment(amount))
+                }
                 transaction.set(txRef, transactionData)
                 null
             }.await()
@@ -85,6 +99,9 @@ class UserRepositoryImpl @Inject constructor(
 
             firestore.runTransaction { transaction ->
                 val snapshot = transaction.get(userRef)
+                if (!snapshot.exists()) {
+                    throw Exception("User profile not found")
+                }
                 val currentBalance = snapshot.getDouble("walletBalance") ?: 0.0
                 if (currentBalance < amount) {
                     throw Exception("Insufficient balance")

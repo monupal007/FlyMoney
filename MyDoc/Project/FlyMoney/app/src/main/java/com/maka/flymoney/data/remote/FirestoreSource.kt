@@ -1,5 +1,6 @@
 package com.maka.flymoney.data.remote
 
+import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.maka.flymoney.domain.model.Transaction
@@ -14,11 +15,13 @@ import javax.inject.Singleton
 class FirestoreSource @Inject constructor(
     private val firestore: FirebaseFirestore
 ) {
+    private val TAG = "FirestoreSource"
+
     fun observeUser(uid: String): Flow<User?> = callbackFlow {
         val docRef = firestore.collection("users").document(uid)
         val subscription = docRef.addSnapshotListener { snapshot, error ->
             if (error != null) {
-                close(error)
+                Log.e(TAG, "Error observing user $uid", error)
                 return@addSnapshotListener
             }
             if (snapshot != null && snapshot.exists()) {
@@ -38,7 +41,7 @@ class FirestoreSource @Inject constructor(
             
         val subscription = query.addSnapshotListener { snapshot, error ->
             if (error != null) {
-                close(error)
+                Log.e(TAG, "Error observing transactions for $uid", error)
                 return@addSnapshotListener
             }
             val transactions = snapshot?.documents?.mapNotNull { it.toObject(Transaction::class.java) } ?: emptyList()
@@ -51,7 +54,7 @@ class FirestoreSource @Inject constructor(
         val query = firestore.collection("leaderboard").document(period)
         val subscription = query.addSnapshotListener { snapshot, error ->
             if (error != null) {
-                close(error)
+                Log.e(TAG, "Error observing leaderboard $period", error)
                 return@addSnapshotListener
             }
             val players = snapshot?.get("players") as? List<Map<String, Any>>
@@ -74,7 +77,7 @@ class FirestoreSource @Inject constructor(
 
         val subscription = query.addSnapshotListener { snapshot, error ->
             if (error != null) {
-                close(error)
+                Log.e(TAG, "Error observing round history", error)
                 return@addSnapshotListener
             }
             val history = snapshot?.documents?.mapNotNull { it.getDouble("crashAt") } ?: emptyList()

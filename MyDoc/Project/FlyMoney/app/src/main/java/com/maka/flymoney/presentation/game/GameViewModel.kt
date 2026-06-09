@@ -112,8 +112,8 @@ class GameViewModel @Inject constructor(
 
         viewModelScope.launch {
             authRepository.currentUser.collectLatest { user ->
-                user?.let {
-                    userRepository.getUserProfile(it.uid).collectLatest { profile ->
+                if (user != null) { // Ensure user is not null
+                    userRepository.getUserProfile(user.uid).collectLatest { profile ->
                         _uiState.update { it.copy(walletBalance = profile?.walletBalance ?: 0.0) }
                     }
                 }
@@ -147,7 +147,16 @@ class GameViewModel @Inject constructor(
     private fun placeBet(slot: Slot) {
         val amountStr = if (slot == Slot.A) _uiState.value.betAmountA else _uiState.value.betAmountB
         val amount = amountStr.toDoubleOrNull() ?: return
-        if (amount <= 0 || amount > _uiState.value.walletBalance) return
+        
+        if (amount <= 0) {
+            _uiState.update { it.copy(errorMessage = "Invalid amount") }
+            return
+        }
+        
+        if (amount > _uiState.value.walletBalance) {
+            _uiState.update { it.copy(errorMessage = "Insufficient balance (₹${_uiState.value.walletBalance})") }
+            return
+        }
 
         viewModelScope.launch {
             val autoCashoutStr = if (slot == Slot.A) _uiState.value.autoCashoutA else _uiState.value.autoCashoutB
@@ -207,6 +216,8 @@ class GameViewModel @Inject constructor(
 
     fun updateAutoCashoutA(multiplier: String) = _uiState.update { it.copy(autoCashoutA = multiplier) }
     fun updateAutoCashoutB(multiplier: String) = _uiState.update { it.copy(autoCashoutB = multiplier) }
+
+    fun clearError() = _uiState.update { it.copy(errorMessage = null) }
 
     enum class Slot { A, B }
 
