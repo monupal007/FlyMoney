@@ -18,12 +18,12 @@ try {
     }
   }
 
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    // Using the URL from your project info
-    databaseURL: `https://${serviceAccount.project_id}-default-rtdb.firebaseio.com`,
-    storageBucket: `${serviceAccount.project_id}.firebasestorage.app`
-  });
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  // Use the exact URL from your Realtime Database dashboard
+  databaseURL: "https://fly-money-d4a03-default-rtdb.firebaseio.com",
+  storageBucket: "fly-money-d4a03.firebasestorage.app"
+});
 
   console.log("✅ Firebase Admin initialized successfully for project:", serviceAccount.project_id);
 } catch (error) {
