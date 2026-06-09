@@ -9,14 +9,13 @@ router.post('/', verifyFirebaseToken, async (req, res) => {
   const { amount, autoCashoutAt } = req.body;
   const uid = req.uid;
 
-  // Validation
   if (gameEngine.getRoundState() !== 'WAITING') {
     return res.status(400).json({ error: 'Bets are only accepted during WAITING phase' });
   }
 
   const betAmount = parseFloat(amount);
-  if (isNaN(betAmount) || betAmount < 1 || betAmount > 10000) {
-    return res.status(400).json({ error: 'Invalid bet amount (1 - 10,000)' });
+  if (isNaN(betAmount) || betAmount < 1) {
+    return res.status(400).json({ error: 'Invalid bet amount' });
   }
 
   try {
@@ -27,17 +26,28 @@ router.post('/', verifyFirebaseToken, async (req, res) => {
       const userRef = db.collection('users').doc(uid);
       const userDoc = await t.get(userRef);
 
+      let userData;
       if (!userDoc.exists) {
-        throw new Error('User not found');
+        // AUTO-CREATE Profile if missing (Fixes 'User not found' error)
+        userData = {
+          uid: uid,
+          username: `Player_${uid.substring(0, 5)}`,
+          walletBalance: 0,
+          createdAt: admin.firestore.FieldValue.serverTimestamp()
+        };
+        t.set(userRef, userData);
+      } else {
+        userData = userDoc.data();
       }
 
-      const userData = userDoc.data();
       username = userData.username;
-      if (userData.walletBalance < betAmount) {
-        throw new Error('Insufficient balance');
+      const currentBalance = userData.walletBalance || 0;
+
+      if (currentBalance < betAmount) {
+        throw new Error(`Insufficient balance. Current: ₹${currentBalance}`);
       }
 
-      newBalance = userData.walletBalance - betAmount;
+      newBalance = currentBalance - betAmount;
       t.update(userRef, { walletBalance: newBalance });
 
       const txRef = db.collection('transactions').doc();
@@ -52,7 +62,6 @@ router.post('/', verifyFirebaseToken, async (req, res) => {
 
     betManager.placeBet(uid, username, betAmount, autoCashoutAt);
 
-    // Write to RTDB for live UI
     const roundId = gameEngine.getRoundId();
     await rtdb.ref(`rounds/${roundId}/bets/${uid}`).set({
       amount: betAmount,
@@ -70,7 +79,7 @@ router.post('/', verifyFirebaseToken, async (req, res) => {
 
     res.json({ success: true, newBalance });
   } catch (error) {
-    console.error('Bet error:', error);
+    console.error('❌ Bet Error:', error.message);
     res.status(400).json({ error: error.message });
   }
 });

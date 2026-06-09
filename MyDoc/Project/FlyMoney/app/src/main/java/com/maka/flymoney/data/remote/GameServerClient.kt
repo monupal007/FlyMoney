@@ -24,31 +24,41 @@ class GameServerClient @Inject constructor(
     private val baseUrl = "${BuildConfig.SERVER_URL}/api"
 
     suspend fun placeBet(amount: Double, autoCashoutAt: Double?): Result<BetResponse> {
-        val bodyMap = mutableMapOf<String, Any>("amount" to amount)
-        autoCashoutAt?.let { bodyMap["autoCashoutAt"] = it }
-        
-        val requestBody = gson.toJson(bodyMap).toRequestBody("application/json".toMediaType())
-        val request = Request.Builder()
-            .url("$baseUrl/bet")
-            .post(requestBody)
-            .addHeader("Authorization", getAuthHeader())
-            .build()
+        return try {
+            val bodyMap = mutableMapOf<String, Any>("amount" to amount)
+            autoCashoutAt?.let { bodyMap["autoCashoutAt"] = it }
+            
+            val requestBody = gson.toJson(bodyMap).toRequestBody("application/json".toMediaType())
+            val request = Request.Builder()
+                .url("$baseUrl/bet")
+                .post(requestBody)
+                .addHeader("Authorization", getAuthHeader())
+                .build()
 
-        return makeRequest(request, BetResponse::class.java)
+            makeRequest(request, BetResponse::class.java)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     suspend fun cashOut(): Result<CashoutResponse> {
-        val request = Request.Builder()
-            .url("$baseUrl/cashout")
-            .post("{}".toRequestBody("application/json".toMediaType()))
-            .addHeader("Authorization", getAuthHeader())
-            .build()
+        return try {
+            val request = Request.Builder()
+                .url("$baseUrl/cashout")
+                .post("{}".toRequestBody("application/json".toMediaType()))
+                .addHeader("Authorization", getAuthHeader())
+                .build()
 
-        return makeRequest(request, CashoutResponse::class.java)
+            makeRequest(request, CashoutResponse::class.java)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     private suspend fun getAuthHeader(): String {
-        val token = auth.currentUser?.getIdToken(false)?.await()?.token
+        // Force refresh the token (true) to ensure the session is active.
+        // This is a common fix for gRPC 'unauthenticated' (Status 16) errors.
+        val token = auth.currentUser?.getIdToken(true)?.await()?.token
             ?: throw Exception("User not authenticated")
         return "Bearer $token"
     }
@@ -57,13 +67,21 @@ class GameServerClient @Inject constructor(
         try {
             val response = client.newCall(request).execute()
             val body = response.body?.string()
+            
             if (response.isSuccessful && body != null) {
                 Result.success(gson.fromJson(body, responseClass))
             } else {
-                Result.failure(Exception(body ?: "Unknown error"))
+                // Try to extract a clean error message from the server response
+                val errorMessage = try {
+                    val errorMap = gson.fromJson(body, Map::class.java)
+                    errorMap["error"]?.toString() ?: "Server Error: ${response.code}"
+                } catch (e: Exception) {
+                    body ?: "Server Error: ${response.code}"
+                }
+                Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("Network error: ${e.message}"))
         }
     }
 }
